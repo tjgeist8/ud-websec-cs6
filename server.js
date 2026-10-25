@@ -50,10 +50,38 @@ app.get("/api/me", requireUser, (req, res) => {
 
 app.get("/api/students/:id", requireUser, (req, res) => {
   const db = load();
-  const student = db.users.find((row) => row.id === Number(req.params.id) && row.role === "student");
-  if (!student) return res.status(404).json({ error: "No student with that id." });
-  const grades = db.grades.filter((row) => row.student_id === student.id);
-  res.json({ user: publicUser(student), grades });
+
+  const student = db.users.find(
+    (row) =>
+      row.id === Number(req.params.id) &&
+      row.role === "student"
+  );
+
+  if (!student) {
+    return res.status(404).json({
+      error: "No student with that id."
+    });
+  }
+
+  // Students may view only their own records.
+  // TAs may view any student's record.
+  const isTA = req.claims.role === "ta";
+  const isOwnRecord = Number(req.claims.sub) === student.id;
+
+  if (!isTA && !isOwnRecord) {
+    return res.status(403).json({
+      error: "You are not authorized to view this student's record."
+    });
+  }
+
+  const grades = db.grades.filter(
+    (row) => row.student_id === student.id
+  );
+
+  res.json({
+    user: publicUser(student),
+    grades
+  });
 });
 
 app.get("/api/section", requireUser, (req, res) => {
@@ -97,7 +125,4 @@ app.get("*", (_req, res) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-app.listen(port, "0.0.0.0", () => {
-  load();
-  console.log(`Marks listening on ${port}`);
-});
+app.listen
