@@ -125,4 +125,7 @@ app.get("*", (_req, res) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-app.listen
+app.listen(port, "0.0.0.0", () => {
+  load();
+  console.log(`Marks listening on ${port}`);
+});
